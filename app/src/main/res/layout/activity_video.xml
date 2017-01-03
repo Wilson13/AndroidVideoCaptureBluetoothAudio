@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="ow.wilson.bluetoothaudiovideorecord.MainActivity">
+
+    <TextureView
+        android:id="@+id/tv_video"
+        android:layout_centerHorizontal="true"
+        android:layout_width="300dp"
+        android:layout_height="300dp" />
+
+    <Button
+        android:id="@+id/btn_record"
+        android:layout_below="@+id/tv_video"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="Start recording" />
+
+    <Button
+        android:id="@+id/btn_switch_audio"
+        android:layout_below="@+id/btn_record"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="Switch to phone's mic" />
+
+    <TextView
+        android:id="@+id/tv_bt_status"
+        android:layout_below="@+id/btn_switch_audio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        android:text="Audio not routing"
+        android:textSize="16sp"
+        android:textColor="@color/colorAccent" />
+    <!--<Button
+        android:id="@+id/stop_button"
+        android:layout_below="@+id/start_button"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="Stop Recording" />-->
+</RelativeLayout>

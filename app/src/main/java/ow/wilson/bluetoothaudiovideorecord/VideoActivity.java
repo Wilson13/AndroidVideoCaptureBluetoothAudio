@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -14,11 +15,11 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -27,6 +28,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
@@ -76,7 +78,7 @@ public class VideoActivity extends AppCompatActivity
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
 
-    private TextureView mTextureView;
+    private AutoFitTextureView mTextureView;
     private TextView statusTV;
     private Button recordBtn;
     private Button switchBtn;
@@ -220,6 +222,7 @@ public class VideoActivity extends AppCompatActivity
         registerReceiver(bluetoothSCOReceiver, new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED));
         mAudioManager.startBluetoothSco();
         Log.i(TAG, "onResume startBluetoothSco");
+        getHighResolutionOutputSizes();
 
         if (mTextureView.isAvailable()) {
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());
@@ -286,7 +289,7 @@ public class VideoActivity extends AppCompatActivity
         statusTV = (TextView) findViewById(R.id.tv_bt_status);
         recordBtn = (Button) findViewById(ow.wilson.bluetoothaudiovideorecord.R.id.btn_record);
         switchBtn = (Button) findViewById(ow.wilson.bluetoothaudiovideorecord.R.id.btn_switch_audio);
-        mTextureView = (TextureView) findViewById(ow.wilson.bluetoothaudiovideorecord.R.id.tv_video);
+        mTextureView = (AutoFitTextureView) findViewById(ow.wilson.bluetoothaudiovideorecord.R.id.tv_video);
 
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         recordBtn.setOnClickListener(this);
@@ -438,12 +441,12 @@ public class VideoActivity extends AppCompatActivity
             mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                     width, height, mVideoSize);
 
-            /*int orientation = getResources().getConfiguration().orientation;
+            int orientation = getResources().getConfiguration().orientation;
             if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 mTextureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
             } else {
                 mTextureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
-            }*/
+            }
             configureTransform(width, height);
             mMediaRecorder = new MediaRecorder();
 
@@ -536,7 +539,11 @@ public class VideoActivity extends AppCompatActivity
     }
 
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
-        builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        //builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+
+        builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_USE_SCENE_MODE);
+        //builder.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_HIGH_SPEED_VIDEO);
+        builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(120, 120));
     }
 
     /**
@@ -634,32 +641,64 @@ public class VideoActivity extends AppCompatActivity
 
             // Start a capture session
             // Once the session starts, we can update the UI and start recording
-            mCameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
 
-                @Override
-                public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    mPreviewSession = cameraCaptureSession;
-                    updatePreview();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            // UI
-                            mIsRecordingVideo = true;
-                            currentState = AUDIO_INPUT.BT_MIC;
-                            recordBtn.setText("Stop recording");
-                            switchBtn.setText("Switch to phone's mic");
-                            mAudioManager.setBluetoothScoOn(true);
-                            // Start recording
-                            mMediaRecorder.start();
-                        }
-                    });
-                }
+            // If device API is >= 23, capture high speed video.
+            // Only very high-end devices support high speed video.
+            /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                mCameraDevice.createConstrainedHighSpeedCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
 
-                @Override
-                public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    showToast("Failed");
-                }
-            }, mBackgroundHandler);
+                    @Override
+                    public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        mPreviewSession = cameraCaptureSession;
+                        updatePreview();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                // UI
+                                mIsRecordingVideo = true;
+                                currentState = AUDIO_INPUT.BT_MIC;
+                                recordBtn.setText("Stop recording");
+                                switchBtn.setText("Switch to phone's mic");
+                                mAudioManager.setBluetoothScoOn(true);
+                                // Start recording
+                                mMediaRecorder.start();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        showToast("Failed");
+                    }
+                }, mBackgroundHandler);
+            } else */if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
+                mCameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+
+                    @Override
+                    public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        mPreviewSession = cameraCaptureSession;
+                        updatePreview();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                // UI
+                                mIsRecordingVideo = true;
+                                currentState = AUDIO_INPUT.BT_MIC;
+                                recordBtn.setText("Stop recording");
+                                switchBtn.setText("Switch to phone's mic");
+                                mAudioManager.setBluetoothScoOn(true);
+                                // Start recording
+                                mMediaRecorder.start();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+                        showToast("Failed");
+                    }
+                }, mBackgroundHandler);
+            }
         } catch (CameraAccessException e) {
             Log.e(TAG, "CameraAccessException: " + e.toString());
         } catch (IOException e) {
@@ -675,7 +714,7 @@ public class VideoActivity extends AppCompatActivity
         }
     }
 
-    private void stopRecordingVideo() {
+    /*private void stopRecordingVideo() {
         // UI
         mIsRecordingVideo = false;
         recordBtn.setText("Start recording");
@@ -706,6 +745,45 @@ public class VideoActivity extends AppCompatActivity
         Log.d(TAG, "Video saved: " + mNextVideoAbsolutePath);
         mNextVideoAbsolutePath = null;
         startPreview();
+    }*/
+
+    private void stopRecordingVideo() {
+        // UI
+        mIsRecordingVideo = false;
+        recordBtn.setText("Start recording");
+        switchBtn.setText("Switch to phone's mic");
+
+        // Stop audio I/O operation
+        mAudioManager.setMode(AudioManager.MODE_NORMAL);
+        mAudioManager.stopBluetoothSco();
+        AudioNotRouting(); // Inform user that SCO is not connected
+
+        // Added to resolve exception issue when stop recording.
+        // Source:
+        // http://stackoverflow.com/questions/27907090/android-camera-2-api/32621903#32621903
+        try {
+            mPreviewSession.stopRepeating();
+            mPreviewSession.abortCaptures();
+        } catch (CameraAccessException e) {
+            Log.i(TAG, "stopRecordingVideo error 1: " + e.toString());
+        }
+
+        // Stop recording
+        try{
+            mMediaRecorder.stop();
+        }catch(RuntimeException e){
+            //handle the exception
+            Log.i(TAG, "stopRecordingVideo error 2: " + e.toString());
+        }
+
+        mMediaRecorder.reset();
+
+        Toast.makeText(this, "Video saved: " + mNextVideoAbsolutePath,
+                Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Video saved: " + mNextVideoAbsolutePath);
+
+        mNextVideoAbsolutePath = null;
+        startPreview();
     }
 
     /**
@@ -719,6 +797,75 @@ public class VideoActivity extends AppCompatActivity
             return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
                     (long) rhs.getWidth() * rhs.getHeight());
         }
+    }
 
+    private void getHighResolutionOutputSizes() {
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        String cameraId = null;
+        CameraCharacteristics characteristics = null;
+        try {
+            cameraId = manager.getCameraIdList()[0];
+            characteristics = manager.getCameraCharacteristics(cameraId);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        Range<Integer>[] fpsRange = map.getHighSpeedVideoFpsRanges(); // this range consists of available fps range of device's camera.
+
+        for (int i = 0; i < fpsRange.length; i++) {
+            Log.i(TAG, i + "fpsRange: " + fpsRange[i]);
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            Size[] sizes = map.getHighSpeedVideoSizes();
+
+            for (int i = 0; i < sizes.length; i++) {
+                Log.i(TAG, i + "getOutputFormats: " + sizes[i]);
+            }
+
+        }
+
+        try {
+            for (String cameraID: manager.getCameraIdList()) {
+                characteristics = manager.getCameraCharacteristics(cameraID);
+                switch (characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)) {
+                    case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL:
+                        Log.d("SUPPORTED_HARDWARE: ", "FULL");
+                        break;
+                    case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY:
+                        Log.d("SUPPORTED_HARDWARE: ", "LEGACY");
+                        break;
+                    case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED:
+                        Log.d("SUPPORTED_HARDWARE: ", "LIMITED");
+                        break;
+                }
+                StringBuilder stringBuilder = new StringBuilder();
+
+                if ( characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) != null ) {
+                    for (int i = 0; i < characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES).length; i++) {
+                        switch (characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)[i]) {
+                            case CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE:
+                                stringBuilder.append("BACKWARD_COMPATIBLE" + "  ");
+                                break;
+                            case CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING:
+                                stringBuilder.append("MANUAL_POST_PROCESSING" + "  ");
+                                break;
+                            case CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR:
+                                stringBuilder.append("MANUAL_SENSOR" + "  ");
+                                break;
+                            case CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW:
+                                stringBuilder.append("RAW" + "  ");
+                                break;
+                            case CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO:
+                                stringBuilder.append("HIGH_SPEED" + "  ");
+                                break;
+                        }
+                    }
+                    Log.d("Camera2: ", stringBuilder.toString());
+                }
+            }
+            }catch(CameraAccessException e){
+                e.printStackTrace();
+            }
     }
 }

@@ -10,15 +10,15 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="ow.wilson.bluetoothaudiovideorecord.MainActivity">
 
-    <TextureView
+    <ow.wilson.bluetoothaudiovideorecord.AutoFitTextureView
         android:id="@+id/tv_video"
         android:layout_centerHorizontal="true"
-        android:layout_width="300dp"
-        android:layout_height="300dp" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/btn_record"
-        android:layout_below="@+id/tv_video"
+        android:layout_above="@+id/btn_switch_audio"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
@@ -26,7 +26,7 @@
 
     <Button
         android:id="@+id/btn_switch_audio"
-        android:layout_below="@+id/btn_record"
+        android:layout_above="@+id/tv_bt_status"
         android:layout_width="150dp"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
@@ -34,7 +34,8 @@
 
     <TextView
         android:id="@+id/tv_bt_status"
-        android:layout_below="@+id/btn_switch_audio"
+        android:layout_alignParentBottom="true"
+        android:gravity="center_horizontal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"

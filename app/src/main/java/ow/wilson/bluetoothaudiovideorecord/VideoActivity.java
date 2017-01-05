@@ -688,7 +688,7 @@ public class VideoActivity extends AppCompatActivity
 
         try {
             mPreviewSession.stopRepeating();
-            mPreviewSession.abortCaptures();
+            //mPreviewSession.abortCaptures();
         } catch (CameraAccessException e) {
             Log.i(TAG, "stopRecordingVideo error 1: " + e.toString());
         }

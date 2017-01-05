@@ -14,11 +14,11 @@ public class CameraActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video);
 
-        if (null == savedInstanceState) {
+       /* if (null == savedInstanceState) {
             getFragmentManager().beginTransaction()
                     .replace(R.id.container, Camera2BasicFragment.newInstance())
                     .commit();
-        }
+        }*/
     }
 
 }
